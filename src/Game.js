@@ -32,10 +32,17 @@ export default class Game {
         this.#platforms.push(platformFactory.createPlatform(300, 400));
         this.#platforms.push(platformFactory.createPlatform(500, 400));
         this.#platforms.push(platformFactory.createPlatform(700, 400));
-        this.#platforms.push(platformFactory.createPlatform(1100, 400));
+        this.#platforms.push(platformFactory.createPlatform(1100, 500));
+        this.#platforms.push(platformFactory.createPlatform(1200, 600));
+        this.#platforms.push(platformFactory.createPlatform(1400, 600));
+        this.#platforms.push(platformFactory.createPlatform(1800, 600));
+
         this.#platforms.push(platformFactory.createPlatform(300, 550));
+
         this.#platforms.push(platformFactory.createBox(0, 738));
         this.#platforms.push(platformFactory.createBox(200, 738));
+        this.#platforms.push(platformFactory.createBox(600, 738));
+        this.#platforms.push(platformFactory.createBox(1000, 738));
         const box = (platformFactory.createBox(400, 708));
         box.isStep = true;
         this.#platforms.push(box);
@@ -57,45 +64,44 @@ export default class Game {
 
     update() {
 
-        const prevPoint = {
-            x: this.#hero.x,
-            y: this.#hero.y
-        };
 
         this.#hero.update();
 
-        for (let i = 0; i < this.#platforms.length; i++) {
+        for (let platform of this.#platforms) {
 
-            if (this.#hero.isJumpState() && this.#platforms[i].type != "box") {
+            if (this.#hero.isJumpState() && platform.type != "box") {
                 continue;
             }
 
-            const collisionResult = this.getPlatformCollisionResult(this.#hero, this.#platforms[i], prevPoint);
-            if (collisionResult.vertical == true) {
-                this.#hero.stay(this.#platforms[i].y);
-            }
+            this.checkPlatformCollision(this.#hero, platform);
         }
 
         this.#camera.update();
 
         for (let i = 0; i < this.#bullets.length; i++) {
             this.#bullets[i].update();
+            this.#checkBulletPosition(this.#bullets[i], i)
         }
     }
 
-    getPlatformCollisionResult(character, platform, prevPoint) {
+
+    checkPlatformCollision(character, platform) {
+
+        const prevPoint = character.prevPoint
         const collisionResult = this.getOrientCollisionResult(character.collisionbox, platform, prevPoint);
         if (collisionResult.vertical == true) {
             character.y = prevPoint.y;
+            this.#hero.stay(platform.y);
         }
         if (collisionResult.horizontal == true && platform.type == "box") {
             if (platform.isStep) {
                 character.stay(platform.y);
             }
-            character.x = prevPoint.x;
+            else{
+                character.x = prevPoint.x;
+            }
         }
 
-        return collisionResult;
     }
 
     getOrientCollisionResult(aaRect, bbRect, aaPrevPoint) {
@@ -188,6 +194,19 @@ export default class Game {
         buttonContext.arrowUp = this.keyboardProcessor.isButtonPerssed("ArrowUp");
         buttonContext.arrowDown = this.keyboardProcessor.isButtonPerssed("ArrowDown");
         return buttonContext;
+    }
+
+    #checkBulletPosition(bullet, index) {
+        if (bullet.x > (this.#pixiApp.screen.width - this.#worldContainer.x)
+            || bullet.x < (- this.#worldContainer.x)
+            || bullet.y > this.#pixiApp.screen.height
+            || bullet.y < 0) {
+            if (bullet.parent != null) {
+                bullet.removeFromParent();
+            }
+
+            this.#bullets.splice(index, 1)
+        }
     }
 
 }

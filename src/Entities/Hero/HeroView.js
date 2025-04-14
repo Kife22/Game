@@ -73,20 +73,22 @@ export default class HeroView extends Container {
 
     showStay() {
         this.#toState("stay");
-        this.#bulletPointShift.x = (65 + this.#rootNode.pivot.x * this.#rootNode.scale.x) * this.#rootNode.scale.x;
-        this.#bulletPointShift.y = 30;
+        this.#setBulletPointShift(65,30)
     }
 
     showStayUp() {
         this.#toState("stayUp");
+        this.#setBulletPointShift(-2,-40)
     }
 
     showRun() {
         this.#toState("run");
+        this.#setBulletPointShift(65,30)
     }
 
     showRunUp() {
         this.#toState("runUp");
+        this.#setBulletPointShift(40,-20)
     }
 
     showFall() {
@@ -95,14 +97,17 @@ export default class HeroView extends Container {
 
     showRunDown() {
         this.#toState("runDown");
+        this.#setBulletPointShift(20,55)
     }
 
     showLay() {
         this.#toState("lay");
+        this.#setBulletPointShift(65,70)
     }
 
     showJump() {
         this.#toState("jump");
+        this.#setBulletPointShift(-2,40)
     }
     flip(direction) {
         switch (direction) {
@@ -127,6 +132,11 @@ export default class HeroView extends Container {
         const rootNode = new Container();
         this.addChild(rootNode);
         this.#rootNode = rootNode;
+    }
+
+    #setBulletPointShift(x,y) {
+        this.#bulletPointShift.x = (x + this.#rootNode.pivot.x * this.#rootNode.scale.x) * this.#rootNode.scale.x;
+        this.#bulletPointShift.y = y;
     }
 
     #getStayImage() {

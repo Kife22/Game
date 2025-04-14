@@ -1,5 +1,6 @@
 import { Container, Graphics } from "../../../lib/pixi.mjs"
 import HeroView from "./HeroView.js";
+import HerpWeaponUnit from "./HeroWeaponUnit.js";
 
 
 const States = {
@@ -31,20 +32,22 @@ export default class Hero {
     #isLay = false;
     #isStayUp = false;
 
-    #bulletContext = {
+
+
+    #prevPoint = {
         x: 0,
         y: 0,
-        angle: 0,
-    }
+    };
+
 
 
     #view;
-    #bulletAngle;
+    #heroWeaponUnit
 
     constructor(stage) {
         this.#view = new HeroView();
         stage.addChild(this.#view);
-
+        this.#heroWeaponUnit = new HerpWeaponUnit(this.#view);
         this.#state = States.jump;
         this.#view.showJump();
     }
@@ -74,15 +77,18 @@ export default class Hero {
     }
 
     get bulletContext() {
-        this.#bulletContext.x = this.x + this.#view.bulletPointShift.x;
-        this.#bulletContext.y = this.y + this.#view.bulletPointShift.y;
-        this.#bulletContext.angle = this.#view.isFliped
-            ? this.#bulletAngle * -1 + 180
-            : this.#bulletAngle;
-        return this.#bulletContext;
+        return this.#heroWeaponUnit.bulletContext;
+    }
+
+    get prevPoint() {
+        return this.#prevPoint
     }
 
     update() {
+
+        this.#prevPoint.x = this.x;
+        this.#prevPoint.y = this.y;
+
         this.#velocityx = this.#movement.x * this.#speed;
         this.x += this.#velocityx;
 
@@ -171,13 +177,13 @@ export default class Hero {
 
     setView(buttonContext) {
 
-        this.#view.flip(this.#movement.x)
+        this.#view.flip(this.#movement.x)   
         this.#isLay = buttonContext.arrowDown;
         this.#isStayUp = buttonContext.arrowUp;
 
-        this.#setBulletAngel(buttonContext);
+        this.#heroWeaponUnit.setBulletAngle(buttonContext, this.isJumpState());
 
-        if (this.#state == States.Jump || this.#state == States.FlyDown) {
+        if (this.isJumpState()|| this.#state == States.FlyDown) {
             return;
         }
 
@@ -202,27 +208,4 @@ export default class Hero {
 
         }
     }
-
-    #setBulletAngel(buttonContext) {
-        if (buttonContext.arrowLeft || buttonContext.arrowRight) {
-            if (buttonContext.arrowUp) {
-                this.#bulletAngle = -45;
-            }
-            else if (buttonContext.arrowDown) {
-                this.#bulletAngle = 45;
-            } else {
-                this.#bulletAngle = 0
-            }
-        } else {
-            if (buttonContext.arrowUp) {
-                this.#bulletAngle = -90;
-            } else if (buttonContext.arrowDown && this.#state == States.Jump) {
-                this.#bulletAngle = 90;
-            } else {
-                this.#bulletAngle = 0;
-            }
-
-        }
-    }
-
 }
