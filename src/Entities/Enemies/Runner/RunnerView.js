@@ -53,7 +53,7 @@ export default class RunnerView extends Container {
 
     }
 
-    get isFliped(){
+    get isFliped() {
         return this.#rootNode.scale.x == -1;
     }
 
@@ -96,9 +96,8 @@ export default class RunnerView extends Container {
 
     #getRunImage() {
         const view = new Graphics();
-        view.lineStyle(2, 0xffff00);
+        view.lineStyle(2, 0xff0000);
         view.drawRect(0, 0, 20, 90);
-        view.drawRect(0, 30, 70, 5);
         view.transform.skew.x = -0.1;
         return view;
     }
@@ -106,7 +105,7 @@ export default class RunnerView extends Container {
 
     #getJumpImage() {
         const view = new Graphics();
-        view.lineStyle(2, 0xffff00);
+        view.lineStyle(2, 0xff0000);
         view.drawRect(0, 0, 40, 40);
         view.x -= 10;
         view.y += 25;
@@ -115,7 +114,7 @@ export default class RunnerView extends Container {
 
     #getFallImage() {
         const view = new Graphics();
-        view.lineStyle(2, 0xffff00);
+        view.lineStyle(2, 0xff0000);
         view.drawRect(0, 0, 20, 90);
         view.drawRect(10, 20, 5, 60);
         view.transform.skew.x = -0.1;

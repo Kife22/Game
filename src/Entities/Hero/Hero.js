@@ -1,5 +1,4 @@
-import { Container, Graphics } from "../../../lib/pixi.mjs"
-import HeroView from "./HeroView.js";
+import Entity from "../Entity.js";
 import HerpWeaponUnit from "./HeroWeaponUnit.js";
 
 
@@ -9,7 +8,7 @@ const States = {
     FlyDown: "fl",
 }
 
-export default class Hero {
+export default class Hero extends Entity {
 
     #GRAVITY_FORCE = 0.2;
     #speed = 3;
@@ -41,39 +40,17 @@ export default class Hero {
 
 
 
-    #view;
+
     #heroWeaponUnit
 
-    constructor(stage) {
-        this.#view = new HeroView();
-        stage.addChild(this.#view);
-        this.#heroWeaponUnit = new HerpWeaponUnit(this.#view);
+    type = "hero";
+
+    constructor(view) {
+        super(view);
+
+        this.#heroWeaponUnit = new HerpWeaponUnit(this._view);
         this.#state = States.jump;
-        this.#view.showJump();
-    }
-
-    get collisionbox() {
-
-
-        return this.#view.collisionBox;
-    }
-
-    get x() {
-        return this.#view.x
-    }
-
-    set x(value) {
-
-        this.#view.x = value
-    }
-
-    get y() {
-        return this.#view.y
-    }
-
-    set y(value) {
-
-        this.#view.y = value
+        this._view.showJump();
     }
 
     get bulletContext() {
@@ -94,7 +71,7 @@ export default class Hero {
 
         if (this.#velocityY > 0) {
             if (!(this.#state == States.Jump || this.#state == States.FlyDown)) {
-                this.#view.showFall();
+                this._view.showFall();
             }
             this.#state = States.FlyDown
         }
@@ -118,7 +95,7 @@ export default class Hero {
         this.#state = States.Stay;
         this.#velocityY = 0;
 
-        this.y = platformY - this.#view.collisionBox.height;
+        this.y = platformY - this._view.collisionBox.height;
 
     }
 
@@ -129,7 +106,7 @@ export default class Hero {
 
         this.#state = States.Jump
         this.#velocityY -= this.#JUMP_FORCE;
-        this.#view.showJump();
+        this._view.showJump();
     }
 
 
@@ -139,7 +116,7 @@ export default class Hero {
     }
     throwDown() {
         this.#state = States.Jump
-        this.#view.showFall();
+        this._view.showFall();
     }
 
     startLM() {
@@ -177,33 +154,33 @@ export default class Hero {
 
     setView(buttonContext) {
 
-        this.#view.flip(this.#movement.x)   
+        this._view.flip(this.#movement.x)
         this.#isLay = buttonContext.arrowDown;
         this.#isStayUp = buttonContext.arrowUp;
 
         this.#heroWeaponUnit.setBulletAngle(buttonContext, this.isJumpState());
 
-        if (this.isJumpState()|| this.#state == States.FlyDown) {
+        if (this.isJumpState() || this.#state == States.FlyDown) {
             return;
         }
 
         if (buttonContext.arrowLeft || buttonContext.arrowRight) {
             if (buttonContext.arrowUp) {
-                this.#view.showRunUp()
+                this._view.showRunUp()
             }
             else if (buttonContext.arrowDown) {
-                this.#view.showRunDown()
+                this._view.showRunDown()
             } else {
-                this.#view.showRun();
+                this._view.showRun();
             }
 
         } else {
             if (buttonContext.arrowUp) {
-                this.#view.showStayUp()
+                this._view.showStayUp()
             } else if (buttonContext.arrowDown) {
-                this.#view.showLay()
+                this._view.showLay()
             } else {
-                this.#view.showStay();
+                this._view.showStay();
             }
 
         }

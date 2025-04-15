@@ -6,6 +6,7 @@ export default class HerpWeaponUnit {
         x: 0,
         y: 0,
         angle: 0,
+        type: "heroBullet",
     }
 
     #heroView;

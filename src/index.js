@@ -3,8 +3,8 @@ import *as PIXI from "../lib/pixi.mjs"
 
 
 const pixApp = new PIXI.Application({
-    widht: 1024,
-    height: 768, 
+    widht: 1980,
+    height: 1980, 
 })
 
 const game = new Game(pixApp);
