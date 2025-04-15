@@ -71,7 +71,7 @@ export default class Game {
         this.#entities.push(this.#runnerFactory.create(850, 150))
         this.#entities.push(this.#runnerFactory.create(860, 150))
         this.#entities.push(this.#runnerFactory.create(1600, 150))
-        const tourelleFactory = new TourelleFactory(this.#worldContainer, this.#hero)
+        const tourelleFactory = new TourelleFactory(this.#worldContainer, this.#hero, this.#bulletFactory)
         this.#entities.push(tourelleFactory.create(500, 200))
     }
 
@@ -80,7 +80,7 @@ export default class Game {
             const entity = this.#entities[i];
             entity.update();
 
-            if(entity.type == "hero" || entity.type == "characterEnemy"){
+            if(entity.type == "hero" || entity.type == "enemy"){
                 this.#checkDamage(entity);
                 this.#checkPlatforms(entity); 
             }
@@ -93,12 +93,12 @@ export default class Game {
     }
 
     #checkDamage(entity){
-        const damagers = this.#entities.filter(damager => (entity.type == "characterEnemy" && damager.type == "heroBullet")
-                                                            || (entity.type == "hero" && (damager.type == "enemyBullet"  || damager.type == "characterEnemy")));
+        const damagers = this.#entities.filter(damager => (entity.type == "enemy" && damager.type == "heroBullet")
+                                                            || (entity.type == "hero" && (damager.type == "enemyBullet"  || damager.type == "enemy")));
         for (let damager of damagers){
             if(Physics.isCheckAABNB(damager.collisionBox, entity.collisionBox)){
-                entity.dead();
-                if(damager.type != "characterEnemy"){
+                entity.damage();
+                if(damager.type != "enemy"){
                     damager.dead();
                 }
                 break;
@@ -107,7 +107,7 @@ export default class Game {
     }
 
     #checkPlatforms(character){
-        if(character.isDead){
+        if(character.isDead || !character.gravitable){
             return;
         }
 

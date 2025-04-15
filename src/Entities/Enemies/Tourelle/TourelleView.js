@@ -4,6 +4,14 @@ export default class TourelleView extends Container {
 
     #gunView;
 
+    #collisionBox = {
+        x:0,
+        y:0,
+        width:0,
+        height:0
+    }
+
+
     constructor(){
         super();
 
@@ -21,6 +29,9 @@ export default class TourelleView extends Container {
         this.#gunView.x = 0;
         this.#gunView.y = 0;
 
+        this.#collisionBox.width = 100;
+        this.#collisionBox.height = 100;
+
         this.addChild(this.#gunView);
     }
 
@@ -30,5 +41,12 @@ export default class TourelleView extends Container {
 
     set gunRotation(value){
         this.#gunView.rotation = value;
+    }
+
+    get collisionBox(){
+        this.#collisionBox.x = this.x - this.#collisionBox.width/2;
+        this.#collisionBox.y = this.y - this.#collisionBox.height/2;
+
+        return this.#collisionBox;
     }
 }
