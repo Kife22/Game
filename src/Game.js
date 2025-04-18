@@ -1,106 +1,153 @@
-import { Container } from "../lib/pixi.mjs";
+import { Text, TextStyle } from "../lib/pixi.mjs";
 import Camera from "./Camera.js";
-import RunnerFactory from "./Entities/Enemies/Runner/RunnerFactory.js";
-import KeyboardProcessor from "./KeyboardProcessor.js";
-import PlatformFactory from "./Entities/Platforms/PlatformFactory.js";
-import BulletFactory from "./Entities/bullets/BulletFactory.js";
+import BulletFactory from "./Entities/Bullets/BulletFactory.js";
+import EnemiesFactory from "./Entities/Enemies/EnemiesFactory.js";
 import HeroFactory from "./Entities/Hero/HeroFactory.js";
+import PlatformFactory from "./Entities/Platforms/PlatformFactory.js";
+import PowerupsFactory from "./Entities/Powerups/PowerupsFactory.js";
+import KeyboardProcessor from "./KeyboardProcessor.js";
 import Physics from "./Physics.js";
-import TourelleFactory from "./Entities/Enemies/Tourelle/TourelleFactory.js";
-
+import SceneFactory from "./SceneFactory.js";
+import StaticBackground from "./StaticBackground.js";
+import Weapon from "./Weapon.js";
+import World from "./World.js";
 
 export default class Game {
+
     #pixiApp;
     #hero;
     #platforms = [];
     #entities = [];
     #camera;
     #bulletFactory;
+    #runnerFactory;
     #worldContainer;
-    #runnerFactory
-    #tourelleFactory
+    #weapon;
+    #isEndGame = false;
 
     keyboardProcessor;
 
-    constructor(pixiApp) {
+    constructor(pixiApp, assets) {
         this.#pixiApp = pixiApp;
-        this.#worldContainer = new Container();
+
+        this.#worldContainer = new World();
+        this.#pixiApp.stage.addChild(new StaticBackground(this.#pixiApp.screen, assets));
         this.#pixiApp.stage.addChild(this.#worldContainer);
-        const heroFactory = new HeroFactory(this.#worldContainer); 
-        this.#hero = heroFactory.create(100,100);
 
-        this.#entities.push(this.#hero )
+        this.#bulletFactory = new BulletFactory(this.#worldContainer.game, this.#entities);
 
-        const platformFactory = new PlatformFactory(this.#worldContainer)
+        const heroFactory = new HeroFactory(this.#worldContainer.game, assets);
+        this.#hero = heroFactory.create(160, 100);
 
-        this.#platforms.push(platformFactory.createPlatform(100, 400));
-        this.#platforms.push(platformFactory.createPlatform(300, 400));
-        this.#platforms.push(platformFactory.createPlatform(500, 400));
-        this.#platforms.push(platformFactory.createPlatform(700, 400));
-        this.#platforms.push(platformFactory.createPlatform(1100, 500));
-        this.#platforms.push(platformFactory.createPlatform(1200, 600));
-        this.#platforms.push(platformFactory.createPlatform(1400, 600));
-        this.#platforms.push(platformFactory.createPlatform(1800, 600));
+        this.#entities.push(this.#hero);
 
-        this.#platforms.push(platformFactory.createPlatform(300, 550));
+        const enemyFactory = new EnemiesFactory(this.#worldContainer.game, this.#hero, this.#bulletFactory, this.#entities, assets);
 
-        this.#platforms.push(platformFactory.createBox(0, 738));
-        this.#platforms.push(platformFactory.createBox(200, 738));
-        this.#platforms.push(platformFactory.createBox(600, 738));
-        this.#platforms.push(platformFactory.createBox(1000, 738));
-        const box = (platformFactory.createBox(400, 708));
-        box.isStep = true;
-        this.#platforms.push(box);
+        const platformFactory = new PlatformFactory(this.#worldContainer, assets);
+
+        const powerupFactory = new PowerupsFactory(this.#entities, assets, this.#worldContainer.game, this.#hero);
+
+        const sceneFactory = new SceneFactory(this.#platforms, this.#entities, platformFactory, enemyFactory, this.#hero, powerupFactory);
+        sceneFactory.createScene();
 
         this.keyboardProcessor = new KeyboardProcessor(this);
         this.setKeys();
+
         const cameraSettings = {
             target: this.#hero,
             world: this.#worldContainer,
             screenSize: this.#pixiApp.screen,
             maxWorldWidth: this.#worldContainer.width,
             isBackScrollX: false,
-
         }
         this.#camera = new Camera(cameraSettings);
 
-        this.#bulletFactory = new BulletFactory(this.#worldContainer, this.#entities);
 
-        this.#runnerFactory = new RunnerFactory(this.#worldContainer);
-        this.#entities.push(this.#runnerFactory.create(800, 150))
-        this.#entities.push(this.#runnerFactory.create(850, 150))
-        this.#entities.push(this.#runnerFactory.create(860, 150))
-        this.#entities.push(this.#runnerFactory.create(1600, 150))
-        const tourelleFactory = new TourelleFactory(this.#worldContainer, this.#hero, this.#bulletFactory)
-        this.#entities.push(tourelleFactory.create(500, 200))
+        this.#weapon = new Weapon(this.#bulletFactory);
+        this.#weapon.setWeapon(1);
     }
 
-    update() {
-        for(let i = 0; i < this.#entities.length; i ++ ){
+    update(){
+        for(let i = 0; i < this.#entities.length; i++){
             const entity = this.#entities[i];
             entity.update();
 
-            if(entity.type == "hero" || entity.type == "enemy"){
+            if(entity.type == "hero" || entity.type == "enemy" || entity.type == "powerupBox" || entity.type == "spreadgunPowerup"){
                 this.#checkDamage(entity);
-                this.#checkPlatforms(entity); 
+                this.#checkPlatforms(entity);
             }
 
-            this.#checkEntityStatus(entity,i);
-
-            
+            this.#checkEntityStatus(entity, i);
         }
-        this.#camera.update()
+
+        this.#camera.update();
+        this.#weapon.update(this.#hero.bulletContext);
+
+        this.#checkGameStatus();
+    }
+
+    #checkGameStatus(){
+
+        if(this.#isEndGame){
+            return;
+        }
+
+        const isBossDead = this.#entities.some(e => e.isBoss && !e.isActive);
+        if(isBossDead){
+            const enemies = this.#entities.filter(e => e.type == "enemy" && !e.isBoss);
+            enemies.forEach(e => e.dead());
+            this.#isEndGame = true;
+            this.#showEndGame();
+        }
+
+        const isHeroDead = !this.#entities.some(e => e.type == "hero") && this.#hero.isDead;
+        if(isHeroDead){
+            this.#entities.push(this.#hero);
+            this.#worldContainer.game.addChild(this.#hero._view);
+            this.#hero.reset();
+            this.#hero.x = -this.#worldContainer.x + 160;
+            this.#hero.y = 100;
+            this.#weapon.setWeapon(1);
+        }
+    }
+
+    #showEndGame(){
+        const style = new TextStyle({
+            fontFamily: "Impact",
+            fontSize: 50,
+            fill: [0xffffff, 0xdd0000],
+            stroke: 0x000000,
+            strokeThickness: 5,
+            letterSpacing: 30,
+        })
+
+        const text = new Text("STAGE CLEAR", style);
+        text.x = this.#pixiApp.screen.width/2 - text.width/2;
+        text.y = this.#pixiApp.screen.height/2 - text.height/2;
+
+        this.#pixiApp.stage.addChild(text);
     }
 
     #checkDamage(entity){
-        const damagers = this.#entities.filter(damager => (entity.type == "enemy" && damager.type == "heroBullet")
-                                                            || (entity.type == "hero" && (damager.type == "enemyBullet"  || damager.type == "enemy")));
+        const damagers = this.#entities.filter(damager => ((entity.type == "enemy" || entity.type == "powerupBox") && damager.type == "heroBullet")
+                                                        ||(entity.type == "hero" && (damager.type == "enemyBullet" || damager.type == "enemy")));
+        
         for (let damager of damagers){
-            if(Physics.isCheckAABNB(damager.collisionBox, entity.collisionBox)){
+            if(Physics.isCheckAABB(damager.hitBox, entity.hitBox)){
                 entity.damage();
                 if(damager.type != "enemy"){
                     damager.dead();
                 }
+
+                break;
+            }
+        }
+
+        const powerups = this.#entities.filter(powerup => powerup.type == "spreadgunPowerup" && entity.type == "hero");
+        for(let powerup of powerups){
+            if(Physics.isCheckAABB(powerup.hitBox, entity.hitBox)){
+                powerup.damage();
+                this.#weapon.setWeapon(powerup.powerupType);
                 break;
             }
         }
@@ -112,23 +159,27 @@ export default class Game {
         }
 
         for (let platform of this.#platforms){
-            if(character.isJumpState()  && platform.type != "box"){
+            if(character.isJumpState() && platform.type != "box" || !platform.isActive){
                 continue;
             }
-            this.checkPlatformCollision(character, platform)
+            this.checkPlatfromCollision(character, platform)
+        }
+
+        if(character.type == "hero" && character.x < -this.#worldContainer.x){
+            character.x = character.prevPoint.x;
         }
     }
 
+    checkPlatfromCollision(character, platform) {
 
-    checkPlatformCollision(character, platform) {
+        const prevPoint = character.prevPoint;
+        const collisionResult = Physics.getOrientCollisionResult(character.collisionBox, platform.collisionBox, prevPoint);
 
-        const prevPoint = character.prevPoint
-        const collisionResult = Physics.getOrientCollisionResult(character.collisionBox, platform, prevPoint);
         if (collisionResult.vertical == true) {
             character.y = prevPoint.y;
-            this.#hero.stay(platform.y);
+            character.stay(platform.y);
         }
-        if (collisionResult.horizontal == true && platform.type == "box") {
+        if (collisionResult.horizontal == true && platform.type == "box" && !character.isForbiddenHorizontalCollision) {
             if (platform.isStep) {
                 character.stay(platform.y);
             }
@@ -136,18 +187,30 @@ export default class Game {
                 character.x = prevPoint.x;
             }
         }
-
     }
 
     setKeys() {
+
         this.keyboardProcessor.getButton("KeyA").executeDown = function () {
-            this.#bulletFactory.createBullet(this.#hero.bulletContext);
-
-
+            if(!this.#hero.isDead && !this.#hero.isFall){
+                const bullets = this.#entities.filter(bullet => bullet.type == this.#hero.bulletContext.type);
+                if(bullets.length > 10){
+                    return;
+                }
+                this.#weapon.startFire();
+                this.#hero.setView(this.getArrowButtonContext());
+            }
         }
+        this.keyboardProcessor.getButton("KeyA").executeUp = function () {
+            if(!this.#hero.isDead && !this.#hero.isFall){
+                this.#weapon.stopFire();
+                this.#hero.setView(this.getArrowButtonContext());
+            }
+        }
+
         this.keyboardProcessor.getButton("KeyS").executeDown = function () {
-            if (this.keyboardProcessor.isButtonPerssed("ArrowDown")
-                && !(this.keyboardProcessor.isButtonPerssed("ArrowLeft") || (this.keyboardProcessor.isButtonPerssed("ArrowRight")))) {
+            if (this.keyboardProcessor.isButtonPressed("ArrowDown")
+                && !(this.keyboardProcessor.isButtonPressed("ArrowLeft") || this.keyboardProcessor.isButtonPressed("ArrowRight"))) {
                 this.#hero.throwDown();
             }
             else {
@@ -157,21 +220,21 @@ export default class Game {
 
         const arrowLeft = this.keyboardProcessor.getButton("ArrowLeft");
         arrowLeft.executeDown = function () {
-            this.#hero.startLM();
+            this.#hero.startLeftMove();
             this.#hero.setView(this.getArrowButtonContext());
         };
         arrowLeft.executeUp = function () {
-            this.#hero.stopLM();
+            this.#hero.stopLeftMove();
             this.#hero.setView(this.getArrowButtonContext());
         };
 
         const arrowRight = this.keyboardProcessor.getButton("ArrowRight");
         arrowRight.executeDown = function () {
-            this.#hero.startRM();
+            this.#hero.startRightMove();
             this.#hero.setView(this.getArrowButtonContext());
         };
         arrowRight.executeUp = function () {
-            this.#hero.stopRM();
+            this.#hero.stopRightMove();
             this.#hero.setView(this.getArrowButtonContext());
         };
 
@@ -183,7 +246,7 @@ export default class Game {
             this.#hero.setView(this.getArrowButtonContext());
         };
 
-        const arrowDown = this.keyboardProcessor.getButton("ArrowDown");
+        const arrowDown = this.keyboardProcessor.getButton("ArrowDown")
         arrowDown.executeDown = function () {
             this.#hero.setView(this.getArrowButtonContext());
         };
@@ -194,25 +257,30 @@ export default class Game {
 
     getArrowButtonContext() {
         const buttonContext = {}
-        buttonContext.arrowLeft = this.keyboardProcessor.isButtonPerssed("ArrowLeft");
-        buttonContext.arrowRight = this.keyboardProcessor.isButtonPerssed("ArrowRight");
-        buttonContext.arrowUp = this.keyboardProcessor.isButtonPerssed("ArrowUp");
-        buttonContext.arrowDown = this.keyboardProcessor.isButtonPerssed("ArrowDown");
+        buttonContext.arrowLeft = this.keyboardProcessor.isButtonPressed("ArrowLeft");
+        buttonContext.arrowRight = this.keyboardProcessor.isButtonPressed("ArrowRight");
+        buttonContext.arrowUp = this.keyboardProcessor.isButtonPressed("ArrowUp");
+        buttonContext.arrowDown = this.keyboardProcessor.isButtonPressed("ArrowDown");
+        buttonContext.shoot = this.keyboardProcessor.isButtonPressed("KeyA");
         return buttonContext;
     }
 
     #checkEntityStatus(entity, index){
-        if (entity.isDead || this.#isScreenOut(entity)){
+        if(entity.isDead || this.#isScreenOut(entity)){
             entity.removeFromStage();
             this.#entities.splice(index, 1)
         }
     }
 
-    #isScreenOut(entity){
-        return(entity.x > (this.#pixiApp.screen.width - this.#worldContainer.x)
-            || entity.x < (- this.#worldContainer.x)
-            || entity.y > this.#pixiApp.screen.height
-            || entity.y < 0) 
-
+    #isScreenOut(entity) {
+        if (entity.type == "heroBullet" || entity.type == "enemyBullet") {
+            return (entity.x > (this.#pixiApp.screen.width - this.#worldContainer.x)
+                || entity.x < (-this.#worldContainer.x)
+                || entity.y > this.#pixiApp.screen.height
+                || entity.y < 0);
+        }
+        else if (entity.type == "enemy" || entity.type == "hero") {
+            return entity.x < (-this.#worldContainer.x) || entity.y > this.#pixiApp.screen.height;
+        }
     }
 }

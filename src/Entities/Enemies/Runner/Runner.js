@@ -1,19 +1,18 @@
 import Entity from "../../Entity.js";
 
-
 const States = {
     Stay: "stay",
     Jump: "jump",
-    FlyDown: "fl",
+    FlyDown: "flydown",
 }
 
-export default class Runner extends Entity {
+export default class Runner extends Entity{
 
     #GRAVITY_FORCE = 0.2;
-    #speed = 3;
+    #SPEED = 3;
     #JUMP_FORCE = 9;
+    #velocityX = 0;
     #velocityY = 0;
-    #velocityx = 0;
 
     #movement = {
         x: 0,
@@ -25,103 +24,118 @@ export default class Runner extends Entity {
         y: 0,
     };
 
+    #target;
     #state = States.Stay;
+
     type = "enemy";
 
-    constructor(view) {
-        super(view)
+    jumpBehaviorKoef = 0.4;
 
-        this.#state = States.jump;
+    constructor(view, target) {
+        super(view);
+
+        this.#target = target;
+
+        this.#state = States.Jump;
         this._view.showJump();
 
         this.#movement.x = -1;
 
         this.gravitable = true;
+        this.isActive = false;
     }
 
-    get collisionbox() {
+
+    get collisionBox() {
         return this._view.collisionBox;
     }
 
     get x() {
-        return this._view.x
+        return this._view.x;
     }
-
     set x(value) {
-
-        this._view.x = value
+        this._view.x = value;
     }
-
     get y() {
-        return this._view.y
+        return this._view.y;
     }
-
     set y(value) {
-
-        this._view.y = value
+        this._view.y = value;
     }
 
     get prevPoint() {
-        return this.#prevPoint
+        return this.#prevPoint;
     }
 
     update() {
 
+        if(!this.isActive){
+            if(this.x - this.#target.x < 512 + this.collisionBox.width*2){
+                this.isActive = true;
+            }
+            return;
+        }
+
         this.#prevPoint.x = this.x;
         this.#prevPoint.y = this.y;
 
-        this.#velocityx = this.#movement.x * this.#speed;
-        this.x += this.#velocityx;
+        this.#velocityX = this.#movement.x * this.#SPEED;
+        this.x += this.#velocityX;
 
         if (this.#velocityY > 0) {
             if (!(this.#state == States.Jump || this.#state == States.FlyDown)) {
-                if (Math.random() > 0.4) {
+                if(Math.random() > this.jumpBehaviorKoef){
                     this._view.showFall();
-                } else {
+                }
+                else{
                     this.jump();
                 }
             }
             if (this.#velocityY > 0) {
-               this.#state = States.FlyDown; 
+                this.#state = States.FlyDown;
             }
         }
 
-        this.#velocityY += this.#GRAVITY_FORCE
+        this.#velocityY += this.#GRAVITY_FORCE;
         this.y += this.#velocityY;
-
     }
 
     damage(){
-        this.dead();
+        this.#movement.x = 0;
+        this.#GRAVITY_FORCE = 0;
+        this.#velocityX = 0;
+        this.#velocityY = 0;
+
+        const deadAnimation = this._view.showAndGetDeadAnimation();
+        deadAnimation.onComplete = () => {
+            this.dead();
+        }
     }
 
     stay(platformY) {
 
         if (this.#state == States.Jump || this.#state == States.FlyDown) {
             const fakeButtonContext = {};
-            fakeButtonContext.arrowRight = this.#movement.x == 1;
             fakeButtonContext.arrowLeft = this.#movement.x == -1;
+            fakeButtonContext.arrowRight = this.#movement.x == 1;
             this.#state = States.Stay;
             this.setView(fakeButtonContext);
         }
+
         this.#state = States.Stay;
         this.#velocityY = 0;
 
         this.y = platformY - this._view.collisionBox.height;
-
     }
 
     jump() {
         if (this.#state == States.Jump || this.#state == States.FlyDown) {
             return;
         }
-
-        this.#state = States.Jump
+        this.#state = States.Jump;
         this.#velocityY -= this.#JUMP_FORCE;
         this._view.showJump();
     }
-
-
 
     isJumpState() {
         return this.#state == States.Jump;
@@ -129,7 +143,7 @@ export default class Runner extends Entity {
 
     setView(buttonContext) {
 
-        this._view.flip(this.#movement.x)
+        this._view.flip(this.#movement.x);
 
         if (this.isJumpState() || this.#state == States.FlyDown) {
             return;
@@ -137,7 +151,6 @@ export default class Runner extends Entity {
 
         if (buttonContext.arrowLeft || buttonContext.arrowRight) {
             this._view.showRun();
-
         }
     }
 

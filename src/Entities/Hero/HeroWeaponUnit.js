@@ -1,7 +1,6 @@
-export default class HerpWeaponUnit {
+export default class HeroWeaponUnit {
 
     #bulletAngle;
-
     #bulletContext = {
         x: 0,
         y: 0,
@@ -21,28 +20,32 @@ export default class HerpWeaponUnit {
         this.#bulletContext.angle = this.#heroView.isFliped
             ? this.#bulletAngle * -1 + 180
             : this.#bulletAngle;
+
         return this.#bulletContext;
     }
 
-    setBulletAngle(buttonContext, IsJump) {
+    setBulletAngle(buttonContext, isJump) {
         if (buttonContext.arrowLeft || buttonContext.arrowRight) {
             if (buttonContext.arrowUp) {
                 this.#bulletAngle = -45;
             }
             else if (buttonContext.arrowDown) {
                 this.#bulletAngle = 45;
-            } else {
+            }
+            else {
                 this.#bulletAngle = 0
             }
-        } else {
+        }
+        else {
             if (buttonContext.arrowUp) {
                 this.#bulletAngle = -90;
-            } else if (buttonContext.arrowDown && IsJump) {
+            }
+            else if (buttonContext.arrowDown && isJump) {
                 this.#bulletAngle = 90;
-            } else {
+            }
+            else {
                 this.#bulletAngle = 0;
             }
-
         }
     }
 }

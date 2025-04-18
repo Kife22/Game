@@ -1,29 +1,26 @@
 export default class Camera {
 
-    #world;
     #target;
+    #world;
     #isBackScrollX;
-    #centerScrenPointX;
+    #centerScreenPointX;
     #rightBorderWorldPointX;
     #lastTargetX = 0;
 
-    constructor(cameraSettings) {
+    constructor(cameraSettings){
         this.#target = cameraSettings.target;
         this.#world = cameraSettings.world;
-        this.#isBackScrollX = cameraSettings.isBackScroll;
+        this.#isBackScrollX = cameraSettings.isBackScrollX;
 
-        this.#centerScrenPointX = cameraSettings.screenSize.width / 2;
-        this.#rightBorderWorldPointX = this.#world.width - this.#centerScrenPointX;
-
+        this.#centerScreenPointX = cameraSettings.screenSize.width / 2;
+        this.#rightBorderWorldPointX = this.#world.width - this.#centerScreenPointX;
     }
 
-    
-
-    update() {
-        if (this.#target.x > this.#centerScrenPointX 
-            && this.#target.x < this.#rightBorderWorldPointX 
-            && (this.#isBackScrollX|| this.#target.x > this.#lastTargetX)){
-            this.#world.x = this.#centerScrenPointX - this.#target.x;
+    update(){
+        if(this.#target.x > this.#centerScreenPointX 
+            && this.#target.x < this.#rightBorderWorldPointX
+            && (this.#isBackScrollX || this.#target.x > this.#lastTargetX)){
+            this.#world.x = this.#centerScreenPointX - this.#target.x;
             this.#lastTargetX = this.#target.x;
         }
     }

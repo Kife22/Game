@@ -1,4 +1,4 @@
-import { Container, Graphics } from "../../../../lib/pixi.mjs";
+import { AnimatedSprite, Container, Graphics, Sprite } from "../../../../lib/pixi.mjs";
 
 export default class RunnerView extends Container {
 
@@ -6,35 +6,32 @@ export default class RunnerView extends Container {
         width: 0,
         height: 0,
     }
-
     #collisionBox = {
         x: 0,
         y: 0,
         width: 0,
         height: 0,
     }
-
     #stm = {
-
         currentState: "default",
         states: {}
     }
 
     #rootNode;
+    #assets;
 
-    constructor() {
-
+    constructor(assets) {
         super();
+        this.#assets = assets;
 
-        this.#createNodeStruct();
+        this.#createNodeStructure();
+
         this.#rootNode.pivot.x = 10;
         this.#rootNode.x = 10;
         this.#bounds.width = 20;
         this.#bounds.height = 90;
         this.#collisionBox.width = this.#bounds.width;
         this.#collisionBox.height = this.#bounds.height;
-
-
 
         this.#stm.states.run = this.#getRunImage();
         this.#stm.states.jump = this.#getJumpImage();
@@ -43,38 +40,55 @@ export default class RunnerView extends Container {
         for (let key in this.#stm.states) {
             this.#rootNode.addChild(this.#stm.states[key])
         }
-
     }
 
     get collisionBox() {
         this.#collisionBox.x = this.x;
         this.#collisionBox.y = this.y;
         return this.#collisionBox;
-
     }
 
-    get isFliped() {
+    get hitBox() {
+        return this.collisionBox;
+    }
+
+    get isFliped(){
         return this.#rootNode.scale.x == -1;
     }
 
-
     showRun() {
         this.#toState("run");
+    }
+
+    showJump() {
+        this.#toState("jump");
     }
 
     showFall() {
         this.#toState("fall");
     }
 
-    showJump() {
-        this.#toState("jump");
-    }
     flip(direction) {
         switch (direction) {
             case 1:
             case -1:
                 this.#rootNode.scale.x = direction;
         }
+    }
+
+    showAndGetDeadAnimation(){
+        this.#rootNode.visible = false;
+        this.#collisionBox.width = 0;
+        this.#collisionBox.height = 0;
+
+        const explosion = new AnimatedSprite(this.#assets.getAnimationTextures("explosion"));
+        explosion.animationSpeed = 1/5;
+        explosion.x = -explosion.width/2;
+        explosion.loop = false;
+        explosion.play();
+        this.addChild(explosion);
+
+        return explosion;
     }
 
     #toState(key) {
@@ -88,38 +102,27 @@ export default class RunnerView extends Container {
         this.#stm.currentState = key;
     }
 
-    #createNodeStruct() {
+    #createNodeStructure() {
         const rootNode = new Container();
         this.addChild(rootNode);
         this.#rootNode = rootNode;
     }
 
     #getRunImage() {
-        const view = new Graphics();
-        view.lineStyle(2, 0xff0000);
-        view.drawRect(0, 0, 20, 90);
-        view.transform.skew.x = -0.1;
+        const view = new AnimatedSprite(this.#assets.getAnimationTextures("runnerrun"));
+        view.animationSpeed = 1 / 10;
+        view.play();
+        view.y += 2;
         return view;
     }
 
-
     #getJumpImage() {
-        const view = new Graphics();
-        view.lineStyle(2, 0xff0000);
-        view.drawRect(0, 0, 40, 40);
-        view.x -= 10;
-        view.y += 25;
+        const view = new Sprite(this.#assets.getTexture("runnerjump0000"));
         return view;
     }
 
     #getFallImage() {
-        const view = new Graphics();
-        view.lineStyle(2, 0xff0000);
-        view.drawRect(0, 0, 20, 90);
-        view.drawRect(10, 20, 5, 60);
-        view.transform.skew.x = -0.1;
+        const view = new Sprite(this.#assets.getTexture("runnerjump0000"));
         return view;
     }
-
-
 }
